@@ -11,7 +11,12 @@ class HomePage extends StatelessWidget {
             // Header with gradient background
             Container(
               width: double.infinity,
-              padding: EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 40),
+              padding: EdgeInsets.only(
+                top: 60,
+                left: 20,
+                right: 20,
+                bottom: 40,
+              ),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -31,14 +36,28 @@ class HomePage extends StatelessWidget {
                       CircleAvatar(
                         backgroundColor: Colors.white.withOpacity(0.2),
                         radius: 20,
-                        child: Icon(Icons.handyman, color: Colors.white, size: 20),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/wbackground.jpg',
+                            width: 32,
+                            height: 32,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                Icons.handyman,
+                                color: Colors.white,
+                                size: 20,
+                              );
+                            },
+                          ),
+                        ),
                       ),
                       SizedBox(width: 10),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'HandyLink PH',
+                            'AYO',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 18,
@@ -74,6 +93,8 @@ class HomePage extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 25),
+
+                  // Register as Customer and Login buttons
                   Row(
                     children: [
                       Expanded(
@@ -124,6 +145,108 @@ class HomePage extends StatelessWidget {
                       ),
                     ],
                   ),
+
+                  SizedBox(height: 15),
+
+                  // Google Register Option
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            // Handle Google registration
+                            _showComingSoon(context, 'Google Registration');
+                          },
+                          icon: Image.asset(
+                            'assets/google_logo.png',
+                            height: 20,
+                            width: 20,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                Icons.g_mobiledata,
+                                color: Colors.white,
+                                size: 24,
+                              );
+                            },
+                          ),
+                          label: Text(
+                            'Continue with Google',
+                            style: TextStyle(color: Colors.white, fontSize: 14),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            side: BorderSide(
+                              color: Colors.white.withOpacity(0.5),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // OR Divider
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Divider(color: Colors.white.withOpacity(0.3)),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 10),
+                          child: Text(
+                            'OR',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Divider(color: Colors.white.withOpacity(0.3)),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Facebook Register Option
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            // Handle Facebook registration
+                            _showComingSoon(context, 'Facebook Registration');
+                          },
+                          icon: Image.asset(
+                            'assets/facebook_logo.png',
+                            height: 20,
+                            width: 20,
+                          ),
+                          label: Text(
+                            'Continue with Facebook',
+                            style: TextStyle(color: Colors.white, fontSize: 14),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            side: BorderSide(
+                              color: Colors.white.withOpacity(0.5),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -153,16 +276,12 @@ class HomePage extends StatelessWidget {
                     SizedBox(height: 8),
                     Text(
                       'Join our platform and grow your business',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                     SizedBox(height: 15),
                     ElevatedButton(
                       onPressed: () {
-                            Navigator.pushNamed(context, '/register_handyman');
-                        // Navigate to handyman application
+                        Navigator.pushNamed(context, '/register_handyman');
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF2A7F6E),
@@ -193,7 +312,7 @@ class HomePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Why Choose HandyLink PH?',
+                    'Why Choose AYO?',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -201,36 +320,40 @@ class HomePage extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 20),
-                  
+
                   // Verified Professionals
                   _buildFeatureItem(
                     icon: Icons.verified_user,
                     title: 'Verified Professionals',
-                    description: 'All handymen verified with TESDA credentials and valid IDs',
+                    description:
+                        'All handymen verified with TESDA credentials and valid IDs',
                   ),
                   SizedBox(height: 15),
-                  
+
                   // Transparent Pricing
                   _buildFeatureItem(
                     icon: Icons.attach_money,
                     title: 'Transparent Pricing',
-                    description: 'Pricing determined after on-site assessment, no hidden fees',
+                    description:
+                        'Pricing determined after on-site assessment, no hidden fees',
                   ),
                   SizedBox(height: 15),
-                  
+
                   // Cash Payment
                   _buildFeatureItem(
                     icon: Icons.money,
                     title: 'Cash Payment',
-                    description: 'Simple and secure cash payment directly to the handyman',
+                    description:
+                        'Simple and secure cash payment directly to the handyman',
                   ),
                   SizedBox(height: 15),
-                  
+
                   // Location Based
                   _buildFeatureItem(
                     icon: Icons.location_on,
                     title: 'Location Based',
-                    description: 'Pin your exact location for accurate service delivery',
+                    description:
+                        'Pin your exact location for accurate service delivery',
                   ),
                   SizedBox(height: 30),
                 ],
@@ -284,6 +407,16 @@ class HomePage extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showComingSoon(BuildContext context, String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature feature coming soon!'),
+        backgroundColor: Color(0xFF2A7F6E),
+        duration: Duration(seconds: 2),
+      ),
     );
   }
 }

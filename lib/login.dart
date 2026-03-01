@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'config.dart';
 
-enum UserRole {
-  customer,
-  handyman,
-  superAdmin,
-}
+enum UserRole { customer, handyman, superAdmin }
 
 class LoginPage extends StatefulWidget {
   final UserRole? initialRole;
-  final String? userEmail; // Optional: pre-fill email if coming from registration
-  
-  const LoginPage({Key? key, this.initialRole, this.userEmail}) : super(key: key);
+  final String?
+  userEmail; // Optional: pre-fill email if coming from registration
+
+  const LoginPage({Key? key, this.initialRole, this.userEmail})
+    : super(key: key);
 
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -20,7 +21,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  
+
   bool _isPasswordVisible = false;
   bool _isLoading = false;
 
@@ -42,20 +43,16 @@ class _LoginPageState extends State<LoginPage> {
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
 
-      // Simulate API call
-      await Future.delayed(Duration(seconds: 1));
-
-      // In a real app, you would authenticate with your backend
-      // The backend should return the user's role along with the authentication result
-      
-      // Mock authentication - In production, this should be handled by backend
+      // call backend
       UserRole? userRole = await _authenticateUser(email, password);
-      
+
       if (userRole != null) {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Welcome back! Logging in as ${_getRoleName(userRole)}'),
+            content: Text(
+              'Welcome back! Logging in as ${_getRoleName(userRole)}',
+            ),
             backgroundColor: Color(0xFF2A7F6E),
             duration: Duration(seconds: 2),
           ),
@@ -81,38 +78,39 @@ class _LoginPageState extends State<LoginPage> {
 
   // Mock authentication - In production, this would be an API call to your backend
   Future<UserRole?> _authenticateUser(String email, String password) async {
-    // Simulate API delay
-    await Future.delayed(Duration(milliseconds: 500));
-    
-    // This is where you would verify credentials with your database
-    // and return the actual role from the database
-    
-    // Mock database lookup based on email patterns
-    // In production, this would come from your backend
-    if (email.isEmpty || password.isEmpty) return null;
-    
-    // Demo credentials for different roles (simulating database lookup)
-    if (email.contains('customer') || email == 'customer@test.com') {
-      return UserRole.customer;
-    } else if (email.contains('handyman') || email == 'handyman@test.com') {
-      return UserRole.handyman;
-    } else if (email.contains('admin') || email == 'admin@test.com') {
-      return UserRole.superAdmin;
+    final uri = Uri.parse('$backendUrl/api/auth/login');
+    try {
+      final res = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        final roleStr = data['role'] as String?;
+        if (roleStr == 'customer') return UserRole.customer;
+        if (roleStr == 'handyman') return UserRole.handyman;
+        if (roleStr == 'admin' ||
+            roleStr == 'superadmin' ||
+            roleStr == 'superAdmin')
+          return UserRole.superAdmin;
+      }
+    } catch (e) {
+      print('login error: $e');
     }
-    
-    return null; // Authentication failed
+    return null;
   }
 
   void _navigateBasedOnRole(UserRole role) {
     switch (role) {
       case UserRole.customer:
-        Navigator.pushReplacementNamed(context, '/customer-dashboard');
+        Navigator.pushReplacementNamed(context, '/dashboard_customer');
         break;
       case UserRole.handyman:
-        Navigator.pushReplacementNamed(context, '/handyman-dashboard');
+        Navigator.pushReplacementNamed(context, '/dashboard_handyman');
         break;
       case UserRole.superAdmin:
-        Navigator.pushReplacementNamed(context, '/admin-dashboard');
+        Navigator.pushReplacementNamed(context, '/dashboard_superadmin');
         break;
     }
   }
@@ -160,13 +158,24 @@ class _LoginPageState extends State<LoginPage> {
         title: Row(
           children: [
             CircleAvatar(
-              backgroundColor: Color(0xFF2A7F6E).withOpacity(0.1),
-              radius: 16,
-              child: Icon(Icons.handyman, color: Color(0xFF2A7F6E), size: 16),
+              backgroundColor: Colors.white.withOpacity(0.2),
+              radius: 20,
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/wbackground.jpg', // or 'assets/nobackground.png'
+                  width: 32,
+                  height: 32,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Show fallback icon if image fails to load
+                    return Icon(Icons.handyman, color: Colors.white, size: 20);
+                  },
+                ),
+              ),
             ),
             SizedBox(width: 8),
             Text(
-              'HandyLink PH',
+              'AYO',
               style: TextStyle(
                 color: Color(0xFF1E5F4B),
                 fontWeight: FontWeight.bold,
@@ -191,15 +200,29 @@ class _LoginPageState extends State<LoginPage> {
                   child: Column(
                     children: [
                       Container(
-                        padding: EdgeInsets.all(16),
+                        padding: EdgeInsets.all(1), // Increased from 20 to 30
                         decoration: BoxDecoration(
                           color: Color(0xFF2A7F6E).withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
-                          Icons.lock_outline,
-                          size: 48,
-                          color: Color(0xFF2A7F6E),
+                        child: CircleAvatar(
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          radius: 80, // Increased from 20 to 40
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/wbackground.jpg',
+                              width: 150, // Increased from 50 to 80
+                              height: 150, // Increased from 50 to 80
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.handyman,
+                                  color: Colors.white,
+                                  size: 80,
+                                );
+                              },
+                            ),
+                          ),
                         ),
                       ),
                       SizedBox(height: 16),
@@ -213,19 +236,16 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'Login to your HandyLink PH account',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        'Login to your AYO account',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                         textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 ),
-                
+
                 SizedBox(height: 32),
-                
+
                 // Email Field
                 Text(
                   'Email',
@@ -241,7 +261,10 @@ class _LoginPageState extends State<LoginPage> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     hintText: 'Enter your email',
-                    prefixIcon: Icon(Icons.email_outlined, color: Color(0xFF2A7F6E)),
+                    prefixIcon: Icon(
+                      Icons.email_outlined,
+                      color: Color(0xFF2A7F6E),
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey[300]!),
@@ -252,7 +275,10 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF2A7F6E), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF2A7F6E),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -261,15 +287,17 @@ class _LoginPageState extends State<LoginPage> {
                     if (value == null || value.isEmpty) {
                       return 'Email is required';
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(value)) {
                       return 'Enter a valid email';
                     }
                     return null;
                   },
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Password Field
                 Text(
                   'Password',
@@ -285,10 +313,15 @@ class _LoginPageState extends State<LoginPage> {
                   obscureText: !_isPasswordVisible,
                   decoration: InputDecoration(
                     hintText: 'Enter your password',
-                    prefixIcon: Icon(Icons.lock_outline, color: Color(0xFF2A7F6E)),
+                    prefixIcon: Icon(
+                      Icons.lock_outline,
+                      color: Color(0xFF2A7F6E),
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                        _isPasswordVisible
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                         color: Colors.grey,
                       ),
                       onPressed: () {
@@ -307,7 +340,10 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF2A7F6E), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF2A7F6E),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -322,9 +358,9 @@ class _LoginPageState extends State<LoginPage> {
                     return null;
                   },
                 ),
-                
+
                 SizedBox(height: 12),
-                
+
                 // Forgot Password
                 Align(
                   alignment: Alignment.centerRight,
@@ -333,7 +369,9 @@ class _LoginPageState extends State<LoginPage> {
                       // Navigate to forgot password
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Password reset link sent to your email'),
+                          content: Text(
+                            'Password reset link sent to your email',
+                          ),
                           backgroundColor: Color(0xFF2A7F6E),
                         ),
                       );
@@ -347,9 +385,9 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
-                
+
                 SizedBox(height: 24),
-                
+
                 // Login Button
                 ElevatedButton(
                   onPressed: _isLoading ? null : _submit,
@@ -379,9 +417,9 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                 ),
-                
+
                 SizedBox(height: 20),
-                
+
                 // Register Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -406,106 +444,8 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ],
                 ),
-                
+
                 SizedBox(height: 32),
-                
-                // Divider
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: Colors.grey[300])),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'Quick Access',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    Expanded(child: Divider(color: Colors.grey[300])),
-                  ],
-                ),
-                
-                SizedBox(height: 24),
-                
-                // Quick Dashboard Access Buttons
-                Text(
-                  'Go directly to dashboards:',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E5F4B),
-                  ),
-                ),
-                
-                SizedBox(height: 16),
-                
-                // Customer Dashboard Button
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/dashboard_customer');
-                  },
-                  icon: Icon(Icons.person, color: Colors.white),
-                  label: Text('Customer Dashboard'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF2A7F6E),
-                    foregroundColor: Colors.white,
-                    minimumSize: Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-                
-                SizedBox(height: 12),
-                
-                // Handyman Dashboard Button
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/dashboard_handyman');
-                  },
-                  icon: Icon(Icons.handyman, color: Colors.white),
-                  label: Text('Handyman Dashboard'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF1E5F4B),
-                    foregroundColor: Colors.white,
-                    minimumSize: Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-                
-                SizedBox(height: 12),
-                
-                // Admin Dashboard Button
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/dashboard_superadmin');
-                  },
-                  icon: Icon(Icons.admin_panel_settings, color: Colors.white),
-                  label: Text('Super Admin Dashboard'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.purple[700],
-                    foregroundColor: Colors.white,
-                    minimumSize: Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-                
-                SizedBox(height: 16),
-                
-                // Note about these buttons
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
               ],
             ),
           ),

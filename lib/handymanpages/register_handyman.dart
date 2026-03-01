@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../config.dart';
+import 'package:image_picker/image_picker.dart';
 
 class RegisterPageHandyman extends StatefulWidget {
   final String role;
-  
-  const RegisterPageHandyman({Key? key, this.role = 'handyman'}) : super(key: key);
+
+  const RegisterPageHandyman({Key? key, this.role = 'handyman'})
+    : super(key: key);
 
   @override
   _RegisterPageHandymanState createState() => _RegisterPageHandymanState();
@@ -17,75 +22,93 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  
+
   bool _subscribeToPremium = false;
-  String? _selectedCredentialFile;
-  String? _selectedIdFile;
-  
+  bool _isLoading = false;
+  XFile? _credFile;
+  XFile? _idFile;
+
   final _mobilePrefix = "+63";
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
-      final firstName = _firstNameController.text.trim();
-      final lastName = _lastNameController.text.trim();
-      final mobile = _mobileController.text.trim();
-      final email = _emailController.text.trim();
-      
-      // Here you would typically send data to your backend
-      // including the role parameter: widget.role
-      
-      print('Registering as: ${widget.role}');
-      print('Name: $firstName $lastName');
-      print('Mobile: $_mobilePrefix$mobile');
-      print('Email: $email');
-      print('Premium Subscription: $_subscribeToPremium');
-      
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Application submitted! Welcome, $firstName $lastName!'),
-          backgroundColor: Color(0xFF2A7F6E),
-          duration: Duration(seconds: 3),
-        ),
-      );
-      
-      // Navigate to login with role pre-selected
-      Navigator.pushReplacementNamed(
-        context, 
-        '/login',
-        arguments: {'initialRole': widget.role},
-      );
+      setState(() {
+        _isLoading = true;
+      });
+
+      final uri = Uri.parse('$backendUrl/api/auth/register');
+      final req = http.MultipartRequest('POST', uri);
+      req.fields['role'] = widget.role;
+      req.fields['firstName'] = _firstNameController.text.trim();
+      req.fields['middleName'] = _middleNameController.text.trim();
+      req.fields['lastName'] = _lastNameController.text.trim();
+      req.fields['phone'] = _mobileController.text.trim();
+      req.fields['email'] = _emailController.text.trim();
+      req.fields['password'] = _passwordController.text.trim();
+
+      if (_credFile != null) {
+        req.files.add(
+          await http.MultipartFile.fromPath('credentials', _credFile!.path),
+        );
+      }
+      if (_idFile != null) {
+        req.files.add(
+          await http.MultipartFile.fromPath('validID', _idFile!.path),
+        );
+      }
+
+      try {
+        final streamed = await req.send();
+        final resBody = await streamed.stream.bytesToString();
+        if (streamed.statusCode == 201) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Handyman registered successfully!'),
+              backgroundColor: Color(0xFF2A7F6E),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          Navigator.pushReplacementNamed(
+            context,
+            '/login',
+            arguments: {
+              'initialRole': widget.role,
+              'userEmail': _emailController.text.trim(),
+            },
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: $resBody'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Network error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
-  void _uploadCredential() {
-    // This would typically open file picker
+  Future<void> _pickFile(bool isCredential) async {
+    final picker = ImagePicker();
+    final img = await picker.pickImage(source: ImageSource.gallery);
+    if (img == null) return;
     setState(() {
-      _selectedCredentialFile = 'tesda_certificate.pdf';
+      if (isCredential)
+        _credFile = img;
+      else
+        _idFile = img;
     });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Credential uploaded successfully'),
-        backgroundColor: Color(0xFF2A7F6E),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _uploadId() {
-    // This would typically open file picker
-    setState(() {
-      _selectedIdFile = 'philippine_id.jpg';
-    });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('ID uploaded successfully'),
-        backgroundColor: Color(0xFF2A7F6E),
-        duration: Duration(seconds: 2),
-      ),
-    );
   }
 
   @override
@@ -129,20 +152,34 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                   child: Column(
                     children: [
                       Container(
-                        padding: EdgeInsets.all(16),
+                        padding: EdgeInsets.all(1), // Increased from 20 to 30
                         decoration: BoxDecoration(
                           color: Color(0xFF2A7F6E).withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
-                          Icons.handyman,
-                          size: 48,
-                          color: Color(0xFF2A7F6E),
+                        child: CircleAvatar(
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          radius: 70, // Increased from 20 to 40
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/wbackground.jpg',
+                              width: 130, // Increased from 50 to 80
+                              height: 130, // Increased from 50 to 80
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.handyman,
+                                  color: Colors.white,
+                                  size: 80,
+                                );
+                              },
+                            ),
+                          ),
                         ),
                       ),
                       SizedBox(height: 16),
                       Text(
-                        'Join HandyLink PH',
+                        'Join AYO',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -152,26 +189,14 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                       SizedBox(height: 8),
                       Text(
                         'Become a verified handyman on our platform',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      // Role indicator (optional - for debugging/UI clarity)
-                      Container(
-                        margin: EdgeInsets.only(top: 8),
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Color(0xFF2A7F6E).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),
                 ),
-                
+
                 SizedBox(height: 32),
-                
+
                 // First Name
                 Text(
                   'First Name',
@@ -186,7 +211,10 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                   controller: _firstNameController,
                   decoration: InputDecoration(
                     hintText: 'Enter your first name',
-                    prefixIcon: Icon(Icons.person_outline, color: Color(0xFF2A7F6E)),
+                    prefixIcon: Icon(
+                      Icons.person_outline,
+                      color: Color(0xFF2A7F6E),
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey[300]!),
@@ -197,7 +225,10 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF2A7F6E), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF2A7F6E),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -209,9 +240,9 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                     return null;
                   },
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Middle Name
                 Text(
                   'Middle Name',
@@ -226,7 +257,10 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                   controller: _middleNameController,
                   decoration: InputDecoration(
                     hintText: 'Enter your middle name (optional)',
-                    prefixIcon: Icon(Icons.person_outline, color: Color(0xFF2A7F6E)),
+                    prefixIcon: Icon(
+                      Icons.person_outline,
+                      color: Color(0xFF2A7F6E),
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey[300]!),
@@ -237,15 +271,18 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF2A7F6E), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF2A7F6E),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
                   ),
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Last Name
                 Text(
                   'Last Name',
@@ -260,7 +297,10 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                   controller: _lastNameController,
                   decoration: InputDecoration(
                     hintText: 'Enter your last name',
-                    prefixIcon: Icon(Icons.person_outline, color: Color(0xFF2A7F6E)),
+                    prefixIcon: Icon(
+                      Icons.person_outline,
+                      color: Color(0xFF2A7F6E),
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey[300]!),
@@ -271,7 +311,10 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF2A7F6E), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF2A7F6E),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -283,9 +326,9 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                     return null;
                   },
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Mobile Number
                 Text(
                   'Mobile Number',
@@ -302,7 +345,10 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                   decoration: InputDecoration(
                     hintText: '912 345 6789',
                     prefixIcon: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 14,
+                      ),
                       child: Text(
                         _mobilePrefix,
                         style: TextStyle(
@@ -312,7 +358,10 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                         ),
                       ),
                     ),
-                    prefixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
+                    prefixIconConstraints: BoxConstraints(
+                      minWidth: 0,
+                      minHeight: 0,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey[300]!),
@@ -323,7 +372,10 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF2A7F6E), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF2A7F6E),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -340,9 +392,9 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                     return null;
                   },
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Email
                 Text(
                   'Email',
@@ -358,7 +410,10 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     hintText: 'Enter your email address',
-                    prefixIcon: Icon(Icons.email_outlined, color: Color(0xFF2A7F6E)),
+                    prefixIcon: Icon(
+                      Icons.email_outlined,
+                      color: Color(0xFF2A7F6E),
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey[300]!),
@@ -369,7 +424,10 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF2A7F6E), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF2A7F6E),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -378,15 +436,17 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                     if (value == null || value.isEmpty) {
                       return 'Email is required';
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(value)) {
                       return 'Enter a valid email';
                     }
                     return null;
                   },
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Password
                 Text(
                   'Password',
@@ -402,7 +462,10 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                   obscureText: true,
                   decoration: InputDecoration(
                     hintText: 'Create a password (min. 6 characters)',
-                    prefixIcon: Icon(Icons.lock_outline, color: Color(0xFF2A7F6E)),
+                    prefixIcon: Icon(
+                      Icons.lock_outline,
+                      color: Color(0xFF2A7F6E),
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey[300]!),
@@ -413,7 +476,10 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF2A7F6E), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF2A7F6E),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -428,9 +494,9 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                     return null;
                   },
                 ),
-                
+
                 SizedBox(height: 24),
-                
+
                 // Credentials Section
                 Text(
                   'Credentials (TESDA Certificate, etc.)',
@@ -452,10 +518,13 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (_selectedCredentialFile != null)
+                      if (_credFile != null)
                         Container(
                           margin: EdgeInsets.only(bottom: 12),
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: Color(0xFF2A7F6E).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
@@ -463,11 +532,15 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.check_circle, color: Color(0xFF2A7F6E), size: 16),
+                              Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF2A7F6E),
+                                size: 16,
+                              ),
                               SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  _selectedCredentialFile!,
+                                  _credFile!.name,
                                   style: TextStyle(
                                     color: Color(0xFF1E5F4B),
                                     fontWeight: FontWeight.w500,
@@ -478,7 +551,7 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                           ),
                         ),
                       GestureDetector(
-                        onTap: _uploadCredential,
+                        onTap: () => _pickFile(true),
                         child: Container(
                           width: double.infinity,
                           padding: EdgeInsets.symmetric(vertical: 12),
@@ -508,9 +581,9 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                     ],
                   ),
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Valid ID Section
                 Text(
                   'Valid Philippine ID',
@@ -532,10 +605,13 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (_selectedIdFile != null)
+                      if (_idFile != null)
                         Container(
                           margin: EdgeInsets.only(bottom: 12),
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: Color(0xFF2A7F6E).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
@@ -543,11 +619,15 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.check_circle, color: Color(0xFF2A7F6E), size: 16),
+                              Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF2A7F6E),
+                                size: 16,
+                              ),
                               SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  _selectedIdFile!,
+                                  _idFile!.name,
                                   style: TextStyle(
                                     color: Color(0xFF1E5F4B),
                                     fontWeight: FontWeight.w500,
@@ -558,7 +638,7 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                           ),
                         ),
                       GestureDetector(
-                        onTap: _uploadId,
+                        onTap: () => _pickFile(false),
                         child: Container(
                           width: double.infinity,
                           padding: EdgeInsets.symmetric(vertical: 12),
@@ -588,19 +668,14 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                     ],
                   ),
                 ),
-                
+
                 SizedBox(height: 24),
-                
+
                 // Divider
-                Divider(
-                  color: Colors.grey[300],
-                  thickness: 1,
-                  height: 32,
-                ),
-              
-                
+                Divider(color: Colors.grey[300], thickness: 1, height: 32),
+
                 SizedBox(height: 32),
-                
+
                 // Submit Button
                 ElevatedButton(
                   onPressed: _submit,
@@ -615,15 +690,12 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                   ),
                   child: Text(
                     'Submit Application',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Review Notice
                 Center(
                   child: Container(
@@ -652,9 +724,9 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                     ),
                   ),
                 ),
-                
+
                 SizedBox(height: 20),
-                
+
                 // Login Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -666,7 +738,7 @@ class _RegisterPageHandymanState extends State<RegisterPageHandyman> {
                     GestureDetector(
                       onTap: () {
                         Navigator.pushReplacementNamed(
-                          context, 
+                          context,
                           '/login',
                           arguments: {'initialRole': widget.role},
                         );

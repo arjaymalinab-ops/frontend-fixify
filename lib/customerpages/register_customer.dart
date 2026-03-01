@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../config.dart';
 
 class RegisterPageCustomer extends StatefulWidget {
   final String role;
-  
-  const RegisterPageCustomer({Key? key, this.role = 'customer'}) : super(key: key);
+
+  const RegisterPageCustomer({Key? key, this.role = 'customer'})
+    : super(key: key);
 
   @override
   _RegisterPageCustomerState createState() => _RegisterPageCustomerState();
@@ -27,35 +31,59 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
         _isLoading = true;
       });
 
-      // Simulate API call
-      await Future.delayed(Duration(seconds: 1));
+      final uri = Uri.parse('$backendUrl/api/auth/register');
+      final body = jsonEncode({
+        'role': widget.role,
+        'firstName': _firstNameController.text.trim(),
+        'middleName': _middleNameController.text.trim(),
+        'lastName': _lastNameController.text.trim(),
+        'phone': _mobileController.text.trim(),
+        'email': _emailController.text.trim(),
+        'password': _passwordController.text.trim(),
+      });
 
-      final firstName = _firstNameController.text.trim();
-      final lastName = _lastNameController.text.trim();
-      
-      // Here you would typically send data to your backend
-      // including the role parameter: widget.role
-      
-      print('Registering as: ${widget.role}');
-      print('Name: $firstName $lastName');
-      print('Mobile: $_mobilePrefix${_mobileController.text.trim()}');
-      print('Email: ${_emailController.text.trim()}');
-      
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Welcome, $firstName $lastName! Registration successful.'),
-          backgroundColor: Color(0xFF2A7F6E),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      
+      try {
+        final res = await http.post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: body,
+        );
+        if (res.statusCode == 201) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Registration successful!'),
+              backgroundColor: Color(0xFF2A7F6E),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          Navigator.pushReplacementNamed(
+            context,
+            '/login',
+            arguments: {
+              'initialRole': widget.role,
+              'userEmail': _emailController.text.trim(),
+            },
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${res.body}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Network error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+
       setState(() {
         _isLoading = false;
       });
-      
-      // Navigate directly to customer dashboard after successful registration
-      Navigator.pushReplacementNamed(context, '/customer-dashboard');
     }
   }
 
@@ -100,15 +128,29 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                   child: Column(
                     children: [
                       Container(
-                        padding: EdgeInsets.all(16),
+                        padding: EdgeInsets.all(1), // Increased from 20 to 30
                         decoration: BoxDecoration(
                           color: Color(0xFF2A7F6E).withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
-                          Icons.person_add_alt_1,
-                          size: 48,
-                          color: Color(0xFF2A7F6E),
+                        child: CircleAvatar(
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          radius: 70, // Increased from 20 to 40
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/wbackground.jpg',
+                              width: 130, // Increased from 50 to 80
+                              height: 130, // Increased from 50 to 80
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.handyman,
+                                  color: Colors.white,
+                                  size: 80,
+                                );
+                              },
+                            ),
+                          ),
                         ),
                       ),
                       SizedBox(height: 16),
@@ -122,27 +164,15 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'Join HandyLink PH',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      // Role indicator
-                      Container(
-                        margin: EdgeInsets.only(top: 8),
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Color(0xFF2A7F6E).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
+                        'Join AYO',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),
                 ),
-                
+
                 SizedBox(height: 32),
-                
+
                 // First Name
                 Text(
                   'First Name',
@@ -157,7 +187,10 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                   controller: _firstNameController,
                   decoration: InputDecoration(
                     hintText: 'Enter your first name',
-                    prefixIcon: Icon(Icons.person_outline, color: Color(0xFF2A7F6E)),
+                    prefixIcon: Icon(
+                      Icons.person_outline,
+                      color: Color(0xFF2A7F6E),
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey[300]!),
@@ -168,7 +201,10 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF2A7F6E), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF2A7F6E),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -180,9 +216,9 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                     return null;
                   },
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Middle Name
                 Text(
                   'Middle Name',
@@ -197,7 +233,10 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                   controller: _middleNameController,
                   decoration: InputDecoration(
                     hintText: 'Enter your middle name (optional)',
-                    prefixIcon: Icon(Icons.person_outline, color: Color(0xFF2A7F6E)),
+                    prefixIcon: Icon(
+                      Icons.person_outline,
+                      color: Color(0xFF2A7F6E),
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey[300]!),
@@ -208,15 +247,18 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF2A7F6E), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF2A7F6E),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
                   ),
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Last Name
                 Text(
                   'Last Name',
@@ -231,7 +273,10 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                   controller: _lastNameController,
                   decoration: InputDecoration(
                     hintText: 'Enter your last name',
-                    prefixIcon: Icon(Icons.person_outline, color: Color(0xFF2A7F6E)),
+                    prefixIcon: Icon(
+                      Icons.person_outline,
+                      color: Color(0xFF2A7F6E),
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey[300]!),
@@ -242,7 +287,10 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF2A7F6E), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF2A7F6E),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -254,9 +302,9 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                     return null;
                   },
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Mobile Number
                 Text(
                   'Mobile Number',
@@ -273,7 +321,10 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                   decoration: InputDecoration(
                     hintText: '912 345 6789',
                     prefixIcon: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 14,
+                      ),
                       child: Text(
                         _mobilePrefix,
                         style: TextStyle(
@@ -283,7 +334,10 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                         ),
                       ),
                     ),
-                    prefixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
+                    prefixIconConstraints: BoxConstraints(
+                      minWidth: 0,
+                      minHeight: 0,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey[300]!),
@@ -294,7 +348,10 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF2A7F6E), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF2A7F6E),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -311,9 +368,9 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                     return null;
                   },
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Email
                 Text(
                   'Email',
@@ -329,7 +386,10 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     hintText: 'Enter your email address',
-                    prefixIcon: Icon(Icons.email_outlined, color: Color(0xFF2A7F6E)),
+                    prefixIcon: Icon(
+                      Icons.email_outlined,
+                      color: Color(0xFF2A7F6E),
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey[300]!),
@@ -340,7 +400,10 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF2A7F6E), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF2A7F6E),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -349,15 +412,17 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                     if (value == null || value.isEmpty) {
                       return 'Email is required';
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(value)) {
                       return 'Enter a valid email';
                     }
                     return null;
                   },
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Password
                 Text(
                   'Password',
@@ -373,7 +438,10 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                   obscureText: true,
                   decoration: InputDecoration(
                     hintText: 'Create a password (min. 6 characters)',
-                    prefixIcon: Icon(Icons.lock_outline, color: Color(0xFF2A7F6E)),
+                    prefixIcon: Icon(
+                      Icons.lock_outline,
+                      color: Color(0xFF2A7F6E),
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey[300]!),
@@ -384,7 +452,10 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Color(0xFF2A7F6E), width: 2),
+                      borderSide: BorderSide(
+                        color: Color(0xFF2A7F6E),
+                        width: 2,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.grey[50],
@@ -399,9 +470,9 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                     return null;
                   },
                 ),
-                
+
                 SizedBox(height: 32),
-                
+
                 // Register Button
                 ElevatedButton(
                   onPressed: _isLoading ? null : _submit,
@@ -432,9 +503,9 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                           ),
                         ),
                 ),
-                
+
                 SizedBox(height: 20),
-                
+
                 // Login Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -446,7 +517,7 @@ class _RegisterPageCustomerState extends State<RegisterPageCustomer> {
                     GestureDetector(
                       onTap: () {
                         Navigator.pushReplacementNamed(
-                          context, 
+                          context,
                           '/login',
                           arguments: {'initialRole': widget.role},
                         );

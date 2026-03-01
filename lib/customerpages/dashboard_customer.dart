@@ -7,31 +7,39 @@ class CustomerDashboard extends StatefulWidget {
 
 class _CustomerDashboardState extends State<CustomerDashboard> {
   int _selectedIndex = 0;
-  
+
   // Mock data - In production, this would come from your backend
-  final String _customerName = "Juan";
-  final int _activeBookings = 2;
-  final int _completedBookings = 5;
+  final String _customerName = "JEEAAR";
+  final int _activeBookings = 0;
+  final int _completedBookings = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
+        automaticallyImplyLeading: false, // This removes the back button arrow
         title: Row(
           children: [
             CircleAvatar(
               backgroundColor: Colors.white.withOpacity(0.2),
-              radius: 16,
-              child: Icon(Icons.handyman, color: Colors.white, size: 16),
+              radius: 20,
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/wbackground.jpg',
+                  width: 30,
+                  height: 30,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(Icons.handyman, color: Colors.white, size: 30);
+                  },
+                ),
+              ),
             ),
             SizedBox(width: 8),
             Text(
-              'HandyLink PH',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+              'AYO',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
           ],
         ),
@@ -42,13 +50,13 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           IconButton(
             icon: Icon(Icons.notifications_outlined),
             onPressed: () {
-              // Show notifications
+              Navigator.pushNamed(context, '/notification_customer');
             },
           ),
           IconButton(
             icon: Icon(Icons.person_outline),
             onPressed: () {
-              // Show profile
+              Navigator.pushNamed(context, '/profile_customer');
             },
           ),
         ],
@@ -76,10 +84,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                     SizedBox(height: 4),
                     Text(
                       'What home repair do you need today?',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -154,11 +159,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
               SizedBox(height: 24),
 
               // Divider
-              Divider(
-                color: Colors.grey[300],
-                thickness: 1,
-                height: 32,
-              ),
+              Divider(color: Colors.grey[300], thickness: 1, height: 32),
 
               // Main Menu Options
               Text(
@@ -174,12 +175,24 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
               // My Bookings Card
               _buildMenuCard(
                 title: 'My Bookings',
+                description: 'View your service requests status',
+                icon: Icons.calendar_today,
+                badgeCount: _activeBookings,
+                badgeColor: Colors.orange,
+                onTap: () {
+                  Navigator.pushNamed(context, '/mybookings_customer');
+                },
+              ),
+
+              SizedBox(height: 12),
+              _buildMenuCard(
+                title: 'Booking History',
                 description: 'View your service requests and history',
                 icon: Icons.calendar_today,
                 badgeCount: _activeBookings,
                 badgeColor: Colors.orange,
                 onTap: () {
-                  Navigator.pushNamed(context, '/my-bookings');
+                  Navigator.pushNamed(context, '/bookinghistory_customer');
                 },
               ),
 
@@ -196,21 +209,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   _showSupportOptions();
                 },
               ),
-
-              SizedBox(height: 12),
-
-              // Additional Menu Items (Optional enhancements)
-              _buildMenuCard(
-                title: 'Favorite Handymen',
-                description: 'View your saved handymen',
-                icon: Icons.favorite,
-                badgeCount: 3,
-                badgeColor: Colors.red,
-                onTap: () {
-                  _showComingSoon('Favorite Handymen');
-                },
-              ),
-
               SizedBox(height: 20),
 
               // Promo Banner (Optional)
@@ -219,16 +217,11 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 decoration: BoxDecoration(
                   color: Color(0xFF2A7F6E).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Color(0xFF2A7F6E).withOpacity(0.3),
-                  ),
+                  border: Border.all(color: Color(0xFF2A7F6E).withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.local_offer,
-                      color: Color(0xFF2A7F6E),
-                    ),
+                    Icon(Icons.local_offer, color: Color(0xFF2A7F6E)),
                     SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -276,20 +269,20 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           setState(() {
             _selectedIndex = index;
           });
-          
+
           // Handle navigation based on index
           switch (index) {
             case 0:
               // Already on dashboard
               break;
             case 1:
-              Navigator.pushNamed(context, '/my-bookings');
+              Navigator.pushNamed(context, '/mybookings_customer');
               break;
             case 2:
               _showSupportOptions();
               break;
             case 3:
-              _showComingSoon('Profile');
+              Navigator.pushNamed(context, '/profile_customer');
               break;
           }
         },
@@ -297,10 +290,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         selectedItemColor: Color(0xFF2A7F6E),
         unselectedItemColor: Colors.grey,
         items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_today),
             label: 'Bookings',
@@ -309,55 +299,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
             icon: Icon(Icons.headset_mic),
             label: 'Support',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatChip({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 16),
-          SizedBox(width: 4),
-          Text(
-            '$label: ',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
@@ -417,7 +359,10 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                       ),
                       if (badgeCount != null && badgeCount > 0)
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: badgeColor ?? Colors.orange,
                             borderRadius: BorderRadius.circular(12),
@@ -436,19 +381,12 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                   SizedBox(height: 4),
                   Text(
                     description,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
           ],
         ),
       ),
@@ -456,96 +394,7 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   }
 
   void _showServiceCategories() {
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Select Service',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E5F4B),
-                ),
-              ),
-              SizedBox(height: 16),
-              _buildServiceItem(
-                icon: Icons.plumbing,
-                title: 'Plumbing',
-                description: 'Faucets, pipes, water heater',
-              ),
-              _buildServiceItem(
-                icon: Icons.electrical_services,
-                title: 'Electrical',
-                description: 'Wiring, outlets, fixtures',
-              ),
-              _buildServiceItem(
-                icon: Icons.construction,
-                title: 'Carpentry',
-                description: 'Furniture repair, installations',
-              ),
-              _buildServiceItem(
-                icon: Icons.ac_unit,
-                title: 'Aircon Repair',
-                description: 'Cleaning, repair, maintenance',
-              ),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/book-service');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF2A7F6E),
-                  foregroundColor: Colors.white,
-                  minimumSize: Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text('Book Custom Service'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildServiceItem({
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
-    return ListTile(
-      leading: Container(
-        padding: EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Color(0xFF2A7F6E).withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: Color(0xFF2A7F6E)),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF1E5F4B),
-        ),
-      ),
-      subtitle: Text(description),
-      onTap: () {
-        Navigator.pop(context);
-        Navigator.pushNamed(context, '/book-service', arguments: {'service': title});
-      },
-    );
+    Navigator.pushNamed(context, '/booking_customer');
   }
 
   void _showSupportOptions() {
