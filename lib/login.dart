@@ -505,21 +505,6 @@ class _LoginPageState extends State<LoginPage> {
                     color: Colors.grey[100],
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline, color: Colors.grey[600], size: 16),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'These buttons bypass login for quick testing. In production, users would need to authenticate first.',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),
